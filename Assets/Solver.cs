@@ -529,6 +529,55 @@ public class Solver : MonoBehaviour
                 }
             }
 
+            bool FindCycle(List<int> used, List<int> ans, List<(int,int)> coords, int depth, int begin = 0 )
+            {
+                if (used.Count == depth)
+                {
+                    if (used.OrderBy(x => x).SequenceEqual(ans.OrderBy(y => y)))
+                    {
+                        Debug.Log($"{depth} cycle find.");
+
+                        for( int i = 1; i < coords.Count; ++i )
+                        {
+                            if( ans[0] == used[i] )
+                            {
+                                _SwapDice(coords[0], coords[i]);
+                                m_Dices[coords[0].Item1, coords[0].Item2].Color = Dice.ColorType.Green;
+                                return true;
+                            }
+                        }
+                    }
+
+                    return false;
+                }
+
+                for (int i = begin + 1; i < fixedSurface.Count; ++i)
+                {
+                    int cur = board[fixedSurface[i].coord];
+                    int fix = fixedSurface[i].num;
+
+                    used.Add(cur);
+                    ans.Add(fix);
+                    coords.Add(fixedSurface[i].coord);
+
+                    if (FindCycle(used, ans, coords, depth, i))
+                        return true;
+
+                    used.RemoveAt(used.Count-1);
+                    ans.RemoveAt(ans.Count-1);
+                    coords.RemoveAt(coords.Count - 1);
+                }
+
+                return false;
+            }
+
+            for( int cycle = 3; cycle <= 7; ++ cycle )
+            {
+                if (FindCycle(new List<int>(), new List<int>(), new List<(int, int)>(), cycle ))
+                    return;
+            }
+
+#if false
             for (int i = 0; i < fixedSurface.Count; ++i)
             {
                 for (int j = i + 1; j < fixedSurface.Count; ++j)
@@ -566,6 +615,7 @@ public class Solver : MonoBehaviour
                     }
                 }
             }
+#endif
 
 
             foreach (var surface in fixedSurface)
