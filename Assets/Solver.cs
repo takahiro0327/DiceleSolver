@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using Unity.VisualScripting;
 using UnityEngine;
+using static Solver;
 
 public class Solver : MonoBehaviour
 {
@@ -436,6 +437,55 @@ public class Solver : MonoBehaviour
         }
     }
 
+    void _UpdateYellowSurface()
+    {
+        if (m_Board.answers.Count != 1)
+            return;
+
+        var answer = m_Board.answers[0];
+
+        for (int x = 0; x < 5; ++x)
+        {
+            for (int y = 0; y < 5; ++y)
+            {
+                if (m_Dices[x, y] == null)
+                    continue;
+
+                var color = m_Dices[x, y].Color;
+                var n = m_Dices[x, y].Number;
+
+                if (color == Dice.ColorType.Green)
+                    continue;
+
+                bool isYellow = false;
+
+                for( int i = 0; i < 5; ++i )
+                {
+                    if (answer[x, i] == n && m_Dices[x, i] != null && m_Dices[x,i].Color != Dice.ColorType.Green)
+                    {
+                        isYellow = true;
+                        break;
+                    }
+
+                    if (answer[i, y] == n && m_Dices[i, y] != null && m_Dices[i, y].Color != Dice.ColorType.Green)
+                    {
+                        isYellow = true;
+                        break;
+                    }
+                }
+
+                if( isYellow )
+                {
+                    m_Dices[x, y].Color = Dice.ColorType.Yellow;
+                }
+                else
+                {
+                    m_Dices[x, y].Color = Dice.ColorType.White;
+                }
+            }
+        }
+    }
+
     public void CalcNextSwap()
     {
         _GUIToBoard();
@@ -521,6 +571,7 @@ public class Solver : MonoBehaviour
                     a.Color = Dice.ColorType.Green;
                     b.Color = Dice.ColorType.Green;
 
+                    _UpdateYellowSurface();
                     return;
                 }
                 else
@@ -571,52 +622,15 @@ public class Solver : MonoBehaviour
                 return false;
             }
 
-            for( int cycle = 3; cycle <= 7; ++ cycle )
+            for( int cycle = 3; cycle <= 7; ++cycle )
             {
                 if (FindCycle(new List<int>(), new List<int>(), new List<(int, int)>(), cycle ))
-                    return;
-            }
-
-#if false
-            for (int i = 0; i < fixedSurface.Count; ++i)
-            {
-                for (int j = i + 1; j < fixedSurface.Count; ++j)
                 {
-                    if (fixedSurface[i].num == fixedSurface[j].num)
-                        continue;
-
-                    for (int k = j + 1; k < fixedSurface.Count; ++k)
-                    {
-                        if (fixedSurface[i].num == fixedSurface[k].num || 
-                            fixedSurface[j].num == fixedSurface[k].num )
-                            continue;
-
-                        int bits =
-                            (1 << board[fixedSurface[i].coord]) |
-                            (1 << board[fixedSurface[j].coord]) |
-                            (1 << board[fixedSurface[k].coord]);
-
-                        int bits2 =
-                            (1 << fixedSurface[i].num) |
-                            (1 << fixedSurface[j].num) |
-                            (1 << fixedSurface[k].num);
-
-                        if( bits == bits2 )
-                        {
-                            Debug.Log($"3 cycle. {fixedSurface[i].coord}{fixedSurface[j].coord}{fixedSurface[k].coord}");
-
-                            _SwapDice(
-                                fixedSurface[i].coord,
-                                fixedSurface[i].num == board[fixedSurface[j].coord] ? fixedSurface[j].coord : fixedSurface[k].coord
-                                );
-
-                            return;
-                        }
-                    }
+                    _UpdateYellowSurface();
+                    return;
                 }
+                    
             }
-#endif
-
 
             foreach (var surface in fixedSurface)
             {
@@ -631,6 +645,7 @@ public class Solver : MonoBehaviour
                         {
                             _SwapDice((x,y), (surface.x, surface.y));
                             m_Dices[surface.x, surface.y].Color = Dice.ColorType.Green;
+                            _UpdateYellowSurface();
                             return;
                         }
                     }
